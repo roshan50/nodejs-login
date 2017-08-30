@@ -1,4 +1,5 @@
 var mysql = require("mysql");
+var login = require("./models/login.js");
 
 function REST_ROUTER(router,connection,md5) {
     var self = this;
@@ -6,21 +7,42 @@ function REST_ROUTER(router,connection,md5) {
 }
 
 REST_ROUTER.prototype.handleRoutes= function(router,connection,md5) {
+
     router.get("/",function(req,res){
              res.json({"Error" : false, "Message" : "Hello !"});
     });
 
+    //................................................................
     router.post("/users",function(req,res){
-        var query = "INSERT INTO ??(??,??) VALUES (?,?)";
-        var table = ["user","username","password",req.body.username,md5(req.body.password)];
-        query = mysql.format(query,table);
-        connection.query(query,function(err,rows){
-            if(err) {
-                res.json({"Error" : true, "Message" : "Error executing MySQL query"});
-            } else {
-                res.json({"Error" : false, "Message" : "User Added !"});
+        // console.log(req.body.user);
+        // var query = "INSERT INTO ??(??,??) VALUES (?,?)";
+        // var table = ["user","username","password",req.body.username,md5(req.body.password)];
+        // query = mysql.format(query,table);
+        // connection.query(query,function(err,rows){
+        //     if(err) {
+        //         res.json({"Error" : true, "Message" : "Error executing MySQL query"});
+        //     } else {
+        //         res.json({"Error" : false, "Message" : "User Added !"});
+        //     }
+        // });
+
+        var users = req.body.user;
+        connection.query('INSERT INTO user SET ?',users, function (error, results, fields) {
+            if (error) {
+                console.log("error ocurred",error);
+                res.send({
+                    "code":400,
+                    "failed":"error ocurred"
+                })
+            }else{
+                console.log('The solution is: ', results);
+                res.send({
+                    "code":200,
+                    "success":"user registered sucessfully"
+                });
             }
         });
+
     });
 
     router.get("/users",function(req,res){
@@ -44,10 +66,53 @@ REST_ROUTER.prototype.handleRoutes= function(router,connection,md5) {
             if(err) {
                 res.json({"Error" : true, "Message" : "Error executing MySQL query"+query});
             } else {
-                res.json({"Error" : false, "Message" : "Success", "Users" : rows});
+                res.json({"Error" : false, "Message" : "Success", "User" : rows});
             }
         });
     });
+
+    router.delete("/users/:id",function(req,res){
+        var query = "DELETE from ?? WHERE ??=?";
+        var table = ["user","id",req.params.id];
+        query = mysql.format(query,table);
+        connection.query(query,function(err,rows){
+            if(err) {
+                res.json({"Error" : true, "Message" : "Error executing MySQL query"});
+            } else {
+                res.json({"Error" : false, "Message" : "Deleted the user with id "+req.params.id});
+            }
+        });
+    });
+
+    router.put("/users",function(req,res){
+        console.log(req.body.user.username);
+        var query = "UPDATE ?? SET ?? = ? WHERE ?? = ?";
+        var table = ["user","username",req.body.user.username,"id",req.body.user.id];
+        query = mysql.format(query,table);
+        connection.query(query,function(err,rows){
+            if(err) {
+                res.json({"Error" : true, "Message" : "Error executing MySQL query"});
+            } else {
+                res.json({"Error" : false, "Message" : "Updated the password for username "+req.body.username});
+            }
+        });
+    });
+
+    router.get("/users/search/:username",function(req,res){
+        var query = "SELECT * FROM ?? WHERE ?? like ?";
+        var par = '%'+req.params.username+'%';
+        var table = ["user","username",par];
+        query = mysql.format(query,table);
+        connection.query(query,function(err,rows){
+            if(err) {
+                res.json({"Error" : true, "Message" : "Error executing MySQL query"+query});
+            } else {
+                res.json({"Error" : false, "Message" : "Success"+query, "Users" : rows});
+            }
+        });
+    });
+
+    //...............................................................
 
     router.post("/register",function(req,res){
       // console.log("req",req.body);
@@ -73,7 +138,7 @@ REST_ROUTER.prototype.handleRoutes= function(router,connection,md5) {
       });
     });
     // router.post('/register',login.register);
-    // router.post('/login',login.login)
+    // router.post('/login',login.login);
     router.post("/login",function(req,res){
         // console.log(req.body.username);
         // console.log(req.body.password);
